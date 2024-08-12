@@ -202,7 +202,7 @@
 	},
 	"settings": {
 		"compilationTarget": {
-			"contracts/erc20_state_vars.sol": "ERC20Interface"
+			"contracts/erc20.sol": "ERC20Interface"
 		},
 		"evmVersion": "shanghai",
 		"libraries": {},
@@ -216,12 +216,12 @@
 		"remappings": []
 	},
 	"sources": {
-		"contracts/erc20_state_vars.sol": {
-			"keccak256": "0x1fb42fe56bfc1893fe63864e31ca692ebacb61774241ec9f5f11fdb45d6af9fb",
+		"contracts/erc20.sol": {
+			"keccak256": "0x2882ca6d299277d9556e9dfdaf4df7f4e0bfdb5f772853a1321d5888540fb62a",
 			"license": "GPL-3.0",
 			"urls": [
-				"bzz-raw://abc7dc4042d99e3b929069496fde16a2d2aabd604260c7fa87f68cb76ccb36bf",
-				"dweb:/ipfs/QmYZSRRVKUe5ryBY1zqfbJYk1eU2DRYLsB8f4J3kb4eG4E"
+				"bzz-raw://a9a08e3c247020939bbee686df8ab50377e1adabb47711672ef6ea8c8882307e",
+				"dweb:/ipfs/QmRb97YRZCQANU3cLmdt5rfnimT825QtTft8A6gULd194S"
 			]
 		}
 	},

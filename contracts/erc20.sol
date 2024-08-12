@@ -43,7 +43,7 @@ contract Cryptos is ERC20Interface{
     }
 
     // transfer overrides method of ERC20Interface and transfers token(s) from 1 account to another
-    function transfer(address to, uint tokens ) public  override returns(bool success){
+    function transfer(address to, uint tokens ) public  virtual override returns(bool success){
        // Check if the sender has enough tokens to transfer
         require(balances[msg.sender]>=tokens,"Balance is insufficent");
       
@@ -70,7 +70,7 @@ contract Cryptos is ERC20Interface{
     }
 
     
-    function transferFrom(address from, address to, uint tokens) public override  returns (bool success){
+    function transferFrom(address from, address to, uint tokens) public virtual override  returns (bool success){
 
         require(allowed[from][msg.sender]>=tokens,"Balance is insufficent");
         require(balances[from]>=tokens);
@@ -86,4 +86,131 @@ contract Cryptos is ERC20Interface{
 
         return true;
     }
+}
+
+
+contract CryptosICO is Cryptos{
+        address public admin;
+        // Declare a deposit address where the ether will be send
+        address payable public  deposit;
+        uint tokenPrice=0.001 ether; // 1ETH = 1000 CRPT, 1CRPT = 0.001 ETH
+        uint public hardCap =300 ether;
+        uint public totalRaisedAmount; // in wei
+        // ICO starts right away
+        uint public saleStart=block.timestamp;
+        // ICO ends in a week
+        uint public saleEnd=block.timestamp+604800; // 604800 = a week in seconds
+        // ICO will bee transferable(trade) in a week after sale ends
+        uint public tokenTradeStart=saleEnd + 604800; // 604800 = a week in seconds
+        // Declaring max and min inverstment 
+        uint public  maxInverstment=5 ether;
+        uint public  minInverstment=0.1 ether;
+
+        // Declare ICO state
+        enum State {beforeStart, running, afterEnd, halted}
+        State public icoState;
+
+        // Initialize vars through constructor
+        constructor(address payable _deposit) {
+            deposit=_deposit;
+            admin=msg.sender;
+            icoState=State.beforeStart; 
+        }
+
+        // onlyAdmin requires the sender to be admin
+        modifier onlyAdmin{
+            require(msg.sender==admin,"Only admin is allowed");
+            _;
+        }
+
+        // halt changes the state of contract(ICO) to 'halted'
+        function halt() public onlyAdmin{
+            icoState=State.halted;
+        }
+        
+        // resume changes the state of contract(ICO) to 'running'
+        function resume() public onlyAdmin{
+            icoState=State.running;
+        }
+
+        // changeDepositAddress changes the deposit address to new one (in case of compromisation)
+        function changeDepositAddress(address payable newDeposit)public onlyAdmin{
+            deposit=newDeposit;
+        }
+
+        // getCurrentState returns the current state of ICO
+        function getCurrentState()public view  returns(State s){
+            if (icoState == State.halted){
+            return  State.halted;
+            }else if(block.timestamp<saleStart){
+            return  State.beforeStart;
+            }else if(block.timestamp>=saleStart && block.timestamp<=saleEnd){
+            return  State.running;
+            }else {
+               return  State.afterEnd;
+            }
+        }
+
+        // Declare an Invest event
+        event Invest(address investor, uint value, uint tokens);
+
+        function invest() payable public returns(bool)   {
+            // Get current ICO state
+            icoState=getCurrentState();
+            // Require ICO state to be running
+            require(icoState==State.running,"ICO is not running");
+           
+            // Require value sent met minInverstment & maxInverstment conditions
+            require(msg.value>=minInverstment && msg.value<=maxInverstment,"Investnment value should be between 0.1 ETH and 5 ETH");
+           // increase totalRaisedAmount
+            totalRaisedAmount+=msg.value;    
+            require(totalRaisedAmount<=hardCap,"Total raised amount should not be more than Hard Cap");
+
+            // Calculate how many tokens user will get
+            uint tokens = msg.value / tokenPrice;
+
+            balances[msg.sender]+=tokens; // Increase balance of sender 
+            balances[founder]-=tokens;    // Decrease balance of founder 
+            deposit.transfer(msg.value);  // Transfer the value to deposit address
+
+            // Emit the event
+           emit Invest(msg.sender,msg.value,tokens);
+
+           return  true;
+        }
+
+        // Declare a built-in receive function to accept ETH if it is directly sent to contract address
+        receive() external payable {
+            invest();
+        }
+
+        
+    // transfer overrides method of ERC20Interface and transfers token(s) from 1 account to another
+    function transfer(address to, uint tokens ) public   override returns(bool success){
+        // Check if the tpken can be trated
+        require(block.timestamp>tokenTradeStart,"Token cannot be trated right now");
+        super.transfer(to, tokens); 
+        return true;
+    }
+
+
+    function transferFrom(address from, address to, uint tokens) public  override  returns (bool success){
+
+        require(block.timestamp>tokenTradeStart,"Token cannot be trated right now");
+
+        super.transferFrom(from, to, tokens);
+
+        return true;
+    }
+
+    // burn burns the tokens(destroying tokens)
+    function  burn() public  returns(bool){
+        icoState=getCurrentState();
+        // Require
+        require(icoState==State.afterEnd,"Tokens can be burned in only after end state");
+        // Reset the balance of founder to 0
+        balances[founder]=0;
+        return true;
+    }
+
 }
